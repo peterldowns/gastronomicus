@@ -12,12 +12,19 @@ from django.shortcuts import render_to_response
 from gastronomicus.models import Meeting
 from gastronomicus.models import Attendee
 
+__adjacency = None
+
 def members(attendee_qs):
     return attendee_qs.filter(
             membership_started__isnull=False,
             membership_ended__isnull=False)
 
 def compute_adjacency():
+    # Caching!
+    global __adjacency
+    if __adjacency is not None:
+      return __adjacency
+
     def order(a, b):
         'Swap a and b to ensure a.id < b.id'
         if b.id < a.id:
@@ -82,15 +89,12 @@ def compute_adjacency():
         link['source'] = id_to_index_map[link['source']]
         link['target'] = id_to_index_map[link['target']]
 
-    return dict(links=links, nodes=nodes)
+    __adjacency = dict(links=links, nodes=nodes)
+    return __adjacency
 
 def adjacency(request):
     return HttpResponse(json.dumps(compute_adjacency(), indent=2),
                         mimetype='text/json')
-
-#def my_view(request):
-#    return render_to_response('myapp/index.html', {"foo": "bar"},
-#        mimetype="application/xhtml+xml")
 
 def home(request):
     return render_to_response('templates/index.html', mimetype="text/html")
